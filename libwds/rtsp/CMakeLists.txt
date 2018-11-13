@@ -14,7 +14,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif (CMAKE_BUILD_TYPE STREQUAL "Debug")
 
 find_package(BISON REQUIRED)
-BISON_TARGET(Parser parser.ypp ${PARSER_GEN_DIR}/parser.cpp COMPILE_FLAGS "-l -p wds_ ${PARSER_DEBUG_OPTIONS}")
+BISON_TARGET(Parser parser.ypp ${PARSER_GEN_DIR}/parser.cpp COMPILE_FLAGS "-l -p wds_ ${PARSER_DEBUG_OPTIONS}" DEFINES_FILE ${PARSER_GEN_DIR}/parser.h)
 
 find_package(FLEX REQUIRED)
 FLEX_TARGET(MessageLexer messagelexer.l ${PARSER_GEN_DIR}/messagescanner.cpp COMPILE_FLAGS "-L -P message_ ${PARSER_DEBUG_OPTIONS}")
