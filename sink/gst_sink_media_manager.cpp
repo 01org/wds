@@ -92,3 +92,6 @@ bool GstSinkMediaManager::SetOptimalVideoFormat(const wds::H264VideoFormat& opti
 wds::ConnectorType GstSinkMediaManager::GetConnectorType() const {
   return wds::ConnectorTypeNone;
 }
+
+void GstSinkMediaManager::IDRRequestDone(bool success) {
+}

@@ -211,6 +211,19 @@ class M9SenderOptional final : public OptionalMessageSender<Request::M9> {
   }
 };
 
+class M13SenderOptional final : public OptionalMessageSender<Request::M13> {
+ public:
+  M13SenderOptional(const InitParams& init_params)
+    : OptionalMessageSender<Request::M13>(init_params) {
+  }
+ private:
+  bool HandleReply(Reply* reply) override {
+    bool ok = reply->response_code() == rtsp::STATUS_OK;
+    ToSinkMediaManager(manager_)->IDRRequestDone(ok);
+    return ok;
+  }
+};
+
 StreamingState::StreamingState(const InitParams& init_params, MessageHandlerPtr m16_handler)
   : MessageSequenceWithOptionalSetHandler(init_params) {
   AddSequencedHandler(make_ptr(new TeardownHandler(init_params)));
@@ -219,10 +232,11 @@ StreamingState::StreamingState(const InitParams& init_params, MessageHandlerPtr 
   AddOptionalHandler(make_ptr(new M3Handler(init_params)));
   AddOptionalHandler(make_ptr(new M4Handler(init_params)));
 
-  // optional senders that handle sending play, pause and teardown
+  // optional senders that handle sending play, pause, teardown and idr-request
   AddOptionalHandler(make_ptr(new M7SenderOptional(init_params)));
   AddOptionalHandler(make_ptr(new M8SenderOptional(init_params)));
   AddOptionalHandler(make_ptr(new M9SenderOptional(init_params)));
+  AddOptionalHandler(make_ptr(new M13SenderOptional(init_params)));
   AddOptionalHandler(m16_handler);
 }
 

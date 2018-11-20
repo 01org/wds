@@ -28,6 +28,8 @@
 #include "libwds/rtsp/play.h"
 #include "libwds/rtsp/teardown.h"
 #include "libwds/rtsp/triggermethod.h"
+#include "libwds/rtsp/idrrequest.h"
+#include "libwds/rtsp/setparameter.h"
 #include "libwds/public/media_manager.h"
 #include "libwds/sink/cap_negotiation_state.h"
 #include "libwds/sink/init_state.h"
@@ -109,6 +111,7 @@ class SinkImpl final : public Sink, public RTSPInputHandler, public MessageHandl
   bool Teardown() override;
   bool Play() override;
   bool Pause() override;
+  bool IDRRequest() override;
 
   // RTSPInputHandler
   void MessageParsed(std::unique_ptr<Message> message) override;
@@ -178,6 +181,19 @@ bool SinkImpl::Play() {
 
 bool SinkImpl::Pause() {
   return HandleCommand(CreateCommand<rtsp::Pause, Request::M9>());
+}
+
+bool SinkImpl::IDRRequest() {
+  auto request = new rtsp::SetParameter(manager_->GetPresentationUrl());
+  request->header().set_session(manager_->GetSessionId());
+  request->header().set_cseq(state_machine_->GetNextCSeq());
+
+  auto request_payload = new rtsp::PropertyMapPayload();
+  request_payload->AddProperty(std::shared_ptr<rtsp::Property>(new rtsp::IDRRequest()));
+  request->set_payload(std::unique_ptr<rtsp::Payload>(request_payload));
+
+  request->set_id(Request::M13);
+  return HandleCommand(std::unique_ptr<Message>(request));
 }
 
 void SinkImpl::MessageParsed(std::unique_ptr<Message> message) {

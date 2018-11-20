@@ -42,6 +42,8 @@ class WDS_EXPORT Sink : public Peer {
    * @return newly created Sink instance
    */
   static Sink* Create(Peer::Delegate* delegate, SinkMediaManager* mng);
+
+  virtual bool IDRRequest() = 0;
 };
 
 }

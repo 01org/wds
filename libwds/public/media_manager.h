@@ -155,6 +155,8 @@ class SinkMediaManager : public MediaManager {
    * @return connector type. @see ConnectorType
    */
   virtual ConnectorType GetConnectorType() const = 0;
+
+  virtual void IDRRequestDone(bool success) = 0;
 };
 
 /**
