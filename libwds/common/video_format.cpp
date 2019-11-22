@@ -152,10 +152,10 @@ std::pair<unsigned, unsigned> get_resolution(const H264VideoFormat& format) {
 
 bool video_format_sort_func(const H264VideoFormat& a, const H264VideoFormat& b) {
   if (get_quality_info(a).weight != get_quality_info(b).weight)
-    return get_quality_info(a).weight < get_quality_info(b).weight;
+    return get_quality_info(a).weight > get_quality_info(b).weight;
   if (a.profile != b.profile)
-    return a.profile < b.profile;
-  return a.level < b.level;
+    return a.profile > b.profile;
+  return a.level > b.level;
 }
 
 template <typename RREnum>
