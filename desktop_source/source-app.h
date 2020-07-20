@@ -25,7 +25,7 @@
 #include <memory>
 
 #include "source.h"
-#include "connman-client.h"
+#include "client.h"
 #include "mirac_broker_source.h"
 
 class SourceApp: public P2P::Client::Observer, public P2P::Peer::Observer {

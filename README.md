@@ -5,23 +5,24 @@ WDS is a set of libraries for developers who want to build Wi-Fi Display applica
 WDS consists of:
  * libwds: Main library implements a Wi-Fi Display dialect of RTSP that includes the parser, actual negotiation logic for sink and source, and the related data structures. It is not tied to any specific connection manager, media framework or main loop. This Library is also compatible with MSVC.
  * network: Supports integration with GLib main loop and GStreamer
- * p2p: Supports integration with Connman Wifi P2P features
+ * p2p: Supports integration with Connman and IWD Wifi P2P features
 
 
 The source code includes example implementations:
- * _sink:_ Wi-Fi Display sink that depends on Gstreamer, Connman and GLib mainloop
- * _desktop_source:_ Wi-Fi Display source that depends on Gstreamer, Connman and GLib mainloop
+ * _sink:_ Wi-Fi Display sink that depends on Gstreamer, Connman/IWD and GLib mainloop
+ * _desktop_source:_ Wi-Fi Display source that depends on Gstreamer, Connman/IWD and GLib mainloop
 
 More information can be found on the [mailing list](https://lists.01.org/mailman/listinfo/wysiwidi-dev) and the [wiki](https://github.com/01org/wds/wiki).
 
 ### Requirements:
 
-WDS test executables have runtime dependencies on just a few things (mostly GStreamer and GLib), but for successful Wi-Fi Display sessions the following are adviced:
+WDS test executables have runtime dependencies on just a few things (mostly GStreamer and GLib), but for successful Wi-Fi Display sessions the following are advised:
  * Wifi adapter from Intel 7260-family or Atheros ath9k
- * [wpa_supplicant](http://w1.fi/wpa_supplicant/): version 2.4 or later, built with	`CONFIG_P2P=y`, `CONFIG_WIFI_DISPLAY=y` and `CONFIG_CTRL_IFACE_DBUS_NEW=y`
- * [connman](https://01.org/connman): version 1.28 (released Feb 1st 2015) or later.
  * gstreamer: either master branch more recent than Feb 3rd 2015 (commit d0a50be2), or 1.4 branch more recent than 
 Feb 3rd 2005 (commit 1ce3260a638d or release 1.4.6 or later).
+ * either: [wpa_supplicant](http://w1.fi/wpa_supplicant/): version 2.4 or later, built with	`CONFIG_P2P=y`, `CONFIG_WIFI_DISPLAY=y` and `CONFIG_CTRL_IFACE_DBUS_NEW=y`
+ * [connman](https://01.org/connman): version 1.28 (released Feb 1st 2015) or later.
+ * or: [IWD](https://iwd.wiki.kernel.org/) version 1.9+ -- alternative to connman and wpa_supplicant.
 
 Test results with other Wifi adapters are very welcome but be warned that in many cases Wifi-P2P has not had the testing it needs on linux: you may run into problems in surprising places.
 
@@ -34,7 +35,7 @@ make
 
 ### Testing WDS
 
-#### Pre-requisites
+#### Pre-requisites (connman backend)
 
 Make sure wpa_supplicant & connmand are running. Running both of them uninstalled is possible (but in that case make sure the system wpa_supplicant and system connection manager are _not_ running):
 

@@ -24,7 +24,7 @@
 
 #include "sink-app.h"
 #include "sink.h"
-#include "connman-client.h"
+#include "multi-client.h"
 
 void SinkApp::on_peer_added(P2P::Client *client, std::shared_ptr<P2P::Peer> peer)
 {
@@ -57,26 +57,13 @@ void SinkApp::on_availability_changed(P2P::Peer *peer)
 }
 
 SinkApp::SinkApp(){
-    // Create a information element for a simple WFD Sink
-    P2P::InformationElement ie;
-    auto sub_element = P2P::new_subelement(P2P::DEVICE_INFORMATION);
-    auto dev_info = (P2P::DeviceInformationSubelement*)sub_element;
+    static struct P2P::Parameters params = {
+        .sink = true,
+    };
 
-    // TODO port number is a lie -- we should start the sink first, then 
-    // use the port from there (and sink should probably default to 7236)
-
-    // TODO InformationElement could have constructors for this stuff...
-    dev_info->session_management_control_port = htons(7236);
-    dev_info->maximum_throughput = htons(50);
-    dev_info->field1.device_type = P2P::PRIMARY_SINK;
-    dev_info->field1.session_availability = true;
-    ie.add_subelement (sub_element);
-
-    std::cout << "* Registering Wifi Display with IE " << ie.to_string() <<  std::endl;
-
-    // register the P2P service with connman
-    auto array = ie.serialize ();
-    p2p_client_.reset(new P2P::Client(array, this));
+    // register the P2P service with the DBus service in use
+    std::cout << "* Registering Wifi Display" <<  std::endl;
+    p2p_client_.reset(new P2P::MultiClient(params, this));
 }
 
 SinkApp::SinkApp(const std::string& hostname, int port)

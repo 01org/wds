@@ -27,7 +27,7 @@
 
 namespace P2P {
 
-void Client::connman_appeared_cb(GDBusConnection *connection, const char *name, const char *owner, gpointer data_ptr)
+void ConnmanClient::connman_appeared_cb(GDBusConnection *connection, const char *name, const char *owner, gpointer data_ptr)
 {
     g_dbus_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
                               G_DBUS_PROXY_FLAGS_NONE,
@@ -36,7 +36,7 @@ void Client::connman_appeared_cb(GDBusConnection *connection, const char *name, 
                               "/",
                               "net.connman.Manager",
                               NULL,
-                              Client::proxy_cb,
+                              ConnmanClient::proxy_cb,
                               data_ptr);
 
     /* TODO should get the p2p object path
@@ -48,27 +48,27 @@ void Client::connman_appeared_cb(GDBusConnection *connection, const char *name, 
                               "/net/connman/technology/p2p",
                               "net.connman.Technology",
                               NULL,
-                              Client::technology_proxy_cb,
+                              ConnmanClient::technology_proxy_cb,
                               data_ptr);
 }
 
-void Client::connman_disappeared_cb(GDBusConnection *connection, const char *name, gpointer data_ptr)
+void ConnmanClient::connman_disappeared_cb(GDBusConnection *connection, const char *name, gpointer data_ptr)
 {
-    auto client = static_cast<Client*> (data_ptr);
+    auto client = static_cast<ConnmanClient*> (data_ptr);
     client->connman_disappeared ();
 }
 
 /* static C callback */
-void Client::proxy_signal_cb (GDBusProxy *proxy, const char *sender, const char *signal, GVariant *params, gpointer data_ptr)
+void ConnmanClient::proxy_signal_cb (GDBusProxy *proxy, const char *sender, const char *signal, GVariant *params, gpointer data_ptr)
 {
     if (g_strcmp0(signal, "PeersChanged") != 0)
         return;
 
-    auto client = static_cast<Client*> (data_ptr);
+    auto client = static_cast<ConnmanClient*> (data_ptr);
     client->peers_changed (params);
 }
 
-void Client::get_technologies_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
+void ConnmanClient::get_technologies_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
 {
     GError *error = NULL;
     GDBusProxy *proxy = G_DBUS_PROXY (object);
@@ -99,7 +99,7 @@ void Client::get_technologies_cb (GObject *object, GAsyncResult *res, gpointer d
         std::cout << "Warning: P2P not found in Connman technologies." << std::endl;
 }
 
-void Client::register_peer_service_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
+void ConnmanClient::register_peer_service_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
 {
     GError *error = NULL;
     GDBusProxy *proxy = G_DBUS_PROXY (object);
@@ -112,7 +112,7 @@ void Client::register_peer_service_cb (GObject *object, GAsyncResult *res, gpoin
     }
 }
 
-void Client::get_peers_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
+void ConnmanClient::get_peers_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
 {
     GError *error = NULL;
     GDBusProxy *proxy = G_DBUS_PROXY(object);
@@ -127,7 +127,7 @@ void Client::get_peers_cb (GObject *object, GAsyncResult *res, gpointer data_ptr
     }
 
     g_variant_get(params, "(a(oa{sv}))", &peer_iter);
-    auto client = static_cast<Client*>(data_ptr);
+    auto client = static_cast<ConnmanClient*>(data_ptr);
     client->handle_new_peers(peer_iter);
 
     g_variant_unref(params);
@@ -135,7 +135,7 @@ void Client::get_peers_cb (GObject *object, GAsyncResult *res, gpointer data_ptr
 }
 
 /* static C callback */
-void Client::scan_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
+void ConnmanClient::scan_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
 {
     GError *error = NULL;
     GDBusProxy *proxy = G_DBUS_PROXY (object);
@@ -151,21 +151,21 @@ void Client::scan_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
 }
 
 /* static C callback */
-void Client::proxy_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
+void ConnmanClient::proxy_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
 {
-    auto client = static_cast<Client*> (data_ptr);
+    auto client = static_cast<ConnmanClient*> (data_ptr);
     client->proxy_cb (res);
 }
 
 /* static C callback */
-void Client::technology_proxy_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
+void ConnmanClient::technology_proxy_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
 {
-    auto client = static_cast<Client*> (data_ptr);
+    auto client = static_cast<ConnmanClient*> (data_ptr);
     client->technology_proxy_cb (res);
 }
 
 
-void Client::connman_disappeared()
+void ConnmanClient::connman_disappeared()
 {
     bool was_available = is_available();
 
@@ -178,14 +178,14 @@ void Client::connman_disappeared()
         observer_->on_availability_changed(this);
 }
 
-void Client::handle_new_peers (GVariantIter *added)
+void ConnmanClient::handle_new_peers (GVariantIter *added)
 {
     GVariantIter *props;
     const char *path;
 
     while (g_variant_iter_loop(added, "(oa{sv})", &path, &props)) {
         try {
-            peers_[path] = std::make_shared<P2P::Peer>(path, props);
+            peers_[path] = std::make_shared<P2P::ConnmanPeer>(path, props);
             if (observer_)
                 observer_->on_peer_added(this, peers_[path]);
         } catch (std::invalid_argument &x) {
@@ -194,7 +194,7 @@ void Client::handle_new_peers (GVariantIter *added)
     }
 }
 
-void Client::peers_changed (GVariant *params)
+void ConnmanClient::peers_changed (GVariant *params)
 {
     GVariantIter *added, *removed;
     const char *path;
@@ -218,7 +218,7 @@ void Client::peers_changed (GVariant *params)
     g_variant_iter_free (removed);
 }
 
-void Client::register_peer_service ()
+void ConnmanClient::register_peer_service ()
 {
     GVariantBuilder builder;
 
@@ -241,11 +241,11 @@ void Client::register_peer_service ()
                        G_DBUS_CALL_FLAGS_NONE,
                        -1,
                        NULL,
-                       Client::register_peer_service_cb,
+                       ConnmanClient::register_peer_service_cb,
                        this);
 }
 
-void Client::unregister_peer_service ()
+void ConnmanClient::unregister_peer_service ()
 {
     GVariantBuilder builder;
     g_variant_builder_init (&builder, G_VARIANT_TYPE("a{sv}"));
@@ -262,11 +262,11 @@ void Client::unregister_peer_service ()
                        G_DBUS_CALL_FLAGS_NONE,
                        -1,
                        NULL,
-                       Client::register_peer_service_cb,
+                       ConnmanClient::register_peer_service_cb,
                        this);
 }
 
-void Client::initialize_peers ()
+void ConnmanClient::initialize_peers ()
 {
     g_dbus_proxy_call(proxy_,
                       "GetPeers",
@@ -274,12 +274,12 @@ void Client::initialize_peers ()
                       G_DBUS_CALL_FLAGS_NONE,
                       -1,
                       NULL,
-                      Client::get_peers_cb,
+                      ConnmanClient::get_peers_cb,
                       this);
 }
 
 
-void Client::proxy_cb (GAsyncResult *result)
+void ConnmanClient::proxy_cb (GAsyncResult *result)
 {
     GError *error = NULL;
 
@@ -291,7 +291,7 @@ void Client::proxy_cb (GAsyncResult *result)
     }
 
     g_signal_connect(proxy_, "g-signal",
-                     G_CALLBACK (Client::proxy_signal_cb), this);
+                     G_CALLBACK (ConnmanClient::proxy_signal_cb), this);
 
     g_dbus_proxy_call(proxy_,
                       "GetTechnologies",
@@ -299,7 +299,7 @@ void Client::proxy_cb (GAsyncResult *result)
                       G_DBUS_CALL_FLAGS_NONE,
                       -1,
                       NULL,
-                      Client::get_technologies_cb,
+                      ConnmanClient::get_technologies_cb,
                       this);
 
     initialize_peers();
@@ -309,7 +309,7 @@ void Client::proxy_cb (GAsyncResult *result)
         observer_->on_availability_changed(this);
 }
 
-void Client::technology_proxy_cb (GAsyncResult *result)
+void ConnmanClient::technology_proxy_cb (GAsyncResult *result)
 {
     GError *error = NULL;
 
@@ -323,21 +323,21 @@ void Client::technology_proxy_cb (GAsyncResult *result)
         observer_->on_availability_changed(this);
 }
 
-Client::Client(std::unique_ptr<P2P::InformationElementArray> &take_array, Observer *observer):
+ConnmanClient::ConnmanClient(const Parameters &params, Observer *observer):
+    Client(observer),
     proxy_(NULL),
-    technology_proxy_(NULL),
-    observer_(observer),
-    array_(std::move(take_array))
+    technology_proxy_(NULL)
 {
+    set_ie_array_from_parameters(params);
     connman_watcher_ = g_bus_watch_name (G_BUS_TYPE_SYSTEM,
                                          "net.connman",
                                          G_BUS_NAME_WATCHER_FLAGS_NONE,
-                                         Client::connman_appeared_cb,
-                                         Client::connman_disappeared_cb,
+                                         ConnmanClient::connman_appeared_cb,
+                                         ConnmanClient::connman_disappeared_cb,
                                          this, NULL);
 }
 
-Client::~Client()
+ConnmanClient::~ConnmanClient()
 {
     if (connman_watcher_ != 0) {
         g_bus_unwatch_name (connman_watcher_);
@@ -349,21 +349,21 @@ Client::~Client()
         g_clear_object (&technology_proxy_);
 }
 
-void Client::set_information_element(std::unique_ptr<P2P::InformationElementArray> &take_array)
+void ConnmanClient::set_parameters(const Parameters &params)
 {
     g_return_if_fail (is_available());
 
     unregister_peer_service();
-    array_ = std::move (take_array);
+    set_ie_array_from_parameters(params);
     register_peer_service();
 }
 
-bool Client::is_available() const
+bool ConnmanClient::is_available() const
 {
     return proxy_ && technology_proxy_;
 }
 
-void Client::scan()
+void ConnmanClient::scan()
 {
     g_return_if_fail (is_available());
 
@@ -373,8 +373,35 @@ void Client::scan()
                        G_DBUS_CALL_FLAGS_NONE,
                        60 * 1000,
                        NULL,
-                       Client::scan_cb,
+                       ConnmanClient::scan_cb,
                        this);
+}
+
+void ConnmanClient::set_ie_array_from_parameters(const Parameters &params)
+{
+    P2P::InformationElement ie;
+    auto sub_element = P2P::new_subelement(P2P::DEVICE_INFORMATION);
+    auto dev_info = (P2P::DeviceInformationSubelement *) sub_element;
+
+    if (params.source && params.session_management_control_port != 0)
+        dev_info->session_management_control_port =
+            g_htons(params.session_management_control_port);
+    else
+        dev_info->session_management_control_port = g_htons(7236);
+
+    dev_info->maximum_throughput = g_htons(50);
+
+    if (params.source) {
+        if (params.sink)
+            dev_info->field1.device_type = P2P::DUAL_ROLE;
+	else
+            dev_info->field1.device_type = P2P::SOURCE;
+    } else
+        dev_info->field1.device_type = P2P::PRIMARY_SINK;
+
+    dev_info->field1.session_availability = true;
+    ie.add_subelement(sub_element);
+    array_ = ie.serialize();
 }
 
 }

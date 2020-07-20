@@ -20,9 +20,9 @@
  */
 
 #include <iostream>
-#include <netinet/in.h> // htons()
 
 #include "source-app.h"
+#include "multi-client.h"
 
 void SourceApp::on_availability_changed(P2P::Client *client)
 {
@@ -85,23 +85,14 @@ void SourceApp::on_availability_changed(P2P::Peer *peer)
 SourceApp::SourceApp(int port) :
     peer_index_(0)
 {
-    // Create a information element for a simple WFD Source
-    P2P::InformationElement ie;
-    auto sub_element = P2P::new_subelement(P2P::DEVICE_INFORMATION);
-    auto dev_info = (P2P::DeviceInformationSubelement*)sub_element;
+    static struct P2P::Parameters params = {
+        .source = true,
+        .session_management_control_port = (uint16_t) port,
+    };
 
-    // TODO InformationElement could have constructors for this stuff...
-    dev_info->session_management_control_port = htons(port);
-    dev_info->maximum_throughput = htons(50);
-    dev_info->field1.device_type = P2P::SOURCE;
-    dev_info->field1.session_availability = true;
-    ie.add_subelement(sub_element);
-
-    std::cout << "* Registering Wi-Fi Display Source with IE " << ie.to_string() <<  std::endl;
-
-    // register the P2P service with connman
-    auto array = ie.serialize ();
-    p2p_client_.reset(new P2P::Client(array, this));
+    // register the P2P service with the DBus service in use
+    std::cout << "* Registering Wi-Fi Display Source" <<  std::endl;
+    p2p_client_.reset(new P2P::MultiClient(params, this));
 
     source_.reset(new MiracBrokerSource(port));
 }

@@ -20,6 +20,7 @@
  */
 
 #include <gio/gio.h>
+#include "peer.h"
 #include "information-element.h"
 
 #ifndef CONNMAN_PEER_H_
@@ -27,51 +28,27 @@
 
 namespace P2P {
 
-class Peer {
+class ConnmanPeer : public Peer {
     public:
-        class Observer {
-            public:
-                virtual void on_availability_changed(Peer *peer) {}
-                virtual void on_initialized(Peer *peer) {}
-
-            protected:
-                virtual ~Observer() {}
-        };
-
-        Peer(const char *object_path, GVariantIter *property_iterator);
-        virtual ~Peer();
-
-        void set_observer(Observer* observer) {
-            observer_ = observer;
-        }
+        ConnmanPeer(const char *object_path, GVariantIter *property_iterator);
+        virtual ~ConnmanPeer();
 
         /* TODO add error handling for these -- maybe through observer.on_error? */
-        void connect();
-        void disconnect();
+        void connect() override;
+        void disconnect() override;
 
-        const P2P::DeviceType device_type() const { return ie_->get_device_type(); }
-        const std::string& name() const { return name_; }
-        const std::string& remote_host() const {return remote_host_; }
-        const int remote_port() const { return ie_->get_rtsp_port(); }
-        const std::string& local_host() const {return local_host_; }
-        bool is_available() const { return ready_ && !remote_host_.empty() && !local_host_.empty(); }
+        bool is_available() const override { return ready_ && !remote_host_.empty() && !local_host_.empty(); }
 
-    private:
+    protected:
         static void proxy_signal_cb (GDBusProxy *proxy, const char *sender, const char *signal, GVariant *params, gpointer data_ptr);
         static void proxy_cb(GObject *object, GAsyncResult *res, gpointer data_ptr);
         static void connect_cb (GObject *object, GAsyncResult *res, gpointer data_ptr);
         static void disconnect_cb (GObject *object, GAsyncResult *res, gpointer data_ptr);
 
-        void ips_changed (const char *remote, const char *local);
         void state_changed (const char *state);
-        void name_changed (const char *name);
         void proxy_cb (GAsyncResult *res);
         void handle_property_change (const char *name, GVariant *property);
 
-        Observer *observer_;
-        std::string name_;
-        std::string remote_host_;
-        std::string local_host_;
         bool ready_;
         GDBusProxy *proxy_;
         std::shared_ptr<P2P::InformationElement> ie_;

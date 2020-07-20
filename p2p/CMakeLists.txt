@@ -8,7 +8,7 @@ pkg_check_modules (GIO REQUIRED gio-2.0)
 include_directories(${GIO_INCLUDE_DIRS})
 
 add_library(p2p STATIC
-    connman-peer.cpp connman-client.cpp information-element.cpp
+    connman-peer.cpp connman-client.cpp information-element.cpp iwd-peer.cpp iwd-client.cpp
 )
 
 add_executable(register-peer-service main.cpp)

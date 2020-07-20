@@ -28,18 +28,18 @@
 namespace P2P {
 
 /* static C callback */
-void Peer::proxy_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
+void ConnmanPeer::proxy_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
 {
-    auto client = static_cast<Peer*> (data_ptr);
+    auto client = static_cast<ConnmanPeer*> (data_ptr);
     client->proxy_cb (res);
 }
 
 /* static C callback */
-void Peer::proxy_signal_cb (GDBusProxy *proxy, const char *sender, const char *signal, GVariant *params, gpointer data_ptr)
+void ConnmanPeer::proxy_signal_cb (GDBusProxy *proxy, const char *sender, const char *signal, GVariant *params, gpointer data_ptr)
 {
     GVariant *property;
     char *name;
-    auto peer = static_cast<Peer*> (data_ptr);
+    auto peer = static_cast<ConnmanPeer*> (data_ptr);
 
     if (g_strcmp0(signal, "PropertyChanged") != 0)
         return;
@@ -49,7 +49,7 @@ void Peer::proxy_signal_cb (GDBusProxy *proxy, const char *sender, const char *s
     peer->handle_property_change (name, property);
 }
 
-void Peer::handle_property_change (const char *name, GVariant *property)
+void ConnmanPeer::handle_property_change (const char *name, GVariant *property)
 {
     if (g_strcmp0(name, "State") == 0) {
         state_changed (g_variant_get_string (property, NULL));
@@ -97,7 +97,7 @@ void Peer::handle_property_change (const char *name, GVariant *property)
 }
 
 /* static C callback */
-void Peer::connect_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
+void ConnmanPeer::connect_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
 {
     GError *error = NULL;
     GDBusProxy *proxy = G_DBUS_PROXY (object);
@@ -113,7 +113,7 @@ void Peer::connect_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
 }
 
 /* static C callback */
-void Peer::disconnect_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
+void ConnmanPeer::disconnect_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
 {
     GError *error = NULL;
     GDBusProxy *proxy = G_DBUS_PROXY (object);
@@ -128,7 +128,7 @@ void Peer::disconnect_cb (GObject *object, GAsyncResult *res, gpointer data_ptr)
     std::cout << "* disconnected "<< std::endl;
 }
 
-void Peer::proxy_cb (GAsyncResult *result)
+void ConnmanPeer::proxy_cb (GAsyncResult *result)
 {
     GError *error = NULL;
 
@@ -140,7 +140,7 @@ void Peer::proxy_cb (GAsyncResult *result)
     }
 
     g_signal_connect (proxy_, "g-signal",
-                      G_CALLBACK (Peer::proxy_signal_cb), this);
+                      G_CALLBACK (ConnmanPeer::proxy_signal_cb), this);
 
     /* TODO check the ip address in case it's up to date already */
 
@@ -148,32 +148,7 @@ void Peer::proxy_cb (GAsyncResult *result)
         observer_->on_initialized(this);
 }
 
-void Peer::ips_changed (const char *remote, const char *local)
-{
-    if (g_strcmp0 (remote, remote_host_.c_str()) == 0 &&
-        g_strcmp0 (local, local_host_.c_str()) == 0)
-        return;
-
-    auto was_available = is_available();
-
-    if (g_strcmp0 (remote, "0.0.0.0") == 0)
-        remote_host_.clear();
-    else
-        remote_host_ = std::string(remote);
-
-    if (g_strcmp0 (local, "0.0.0.0") == 0)
-        local_host_.clear();
-    else
-        local_host_ = std::string(local);
-
-    if (!observer_)
-        return;
-
-    if (was_available != is_available())
-        observer_->on_availability_changed(this);
-}
-
-void Peer::state_changed (const char *state)
+void ConnmanPeer::state_changed (const char *state)
 {
     bool ready = (g_strcmp0 (state, "ready") == 0);
 
@@ -190,20 +165,12 @@ void Peer::state_changed (const char *state)
         observer_->on_availability_changed(this);
 }
 
-void Peer::name_changed (const char *name)
-{
-    if (g_strcmp0 (name, name_.c_str()) == 0)
-        return;
-
-    name_ = std::string (name);
-}
-
-
-Peer::Peer(const char *object_path, GVariantIter *props):
-    observer_(NULL)
+ConnmanPeer::ConnmanPeer(const char *object_path, GVariantIter *props)
 {
     GVariant *val;
     const char *prop_name;
+
+    observer_ = NULL;
 
     while (g_variant_iter_loop (props, "{&sv}", &prop_name, &val)) {
         handle_property_change (prop_name, val);
@@ -219,11 +186,11 @@ Peer::Peer(const char *object_path, GVariantIter *props):
                               object_path,
                               "net.connman.Peer",
                               NULL,
-                              Peer::proxy_cb,
+                              ConnmanPeer::proxy_cb,
                               this);
 }
 
-void Peer::connect()
+void ConnmanPeer::connect()
 {
     g_dbus_proxy_call (proxy_,
                        "Connect",
@@ -231,11 +198,11 @@ void Peer::connect()
                        G_DBUS_CALL_FLAGS_NONE,
                        60 * 1000, // is 1 minute too long?
                        NULL,
-                       Peer::connect_cb,
+                       ConnmanPeer::connect_cb,
                        this);
 }
 
-void Peer::disconnect()
+void ConnmanPeer::disconnect()
 {
     g_dbus_proxy_call (proxy_,
                        "Disconnect",
@@ -243,12 +210,11 @@ void Peer::disconnect()
                        G_DBUS_CALL_FLAGS_NONE,
                        -1,
                        NULL,
-                       Peer::disconnect_cb,
+                       ConnmanPeer::disconnect_cb,
                        this);
 }
 
-
-Peer::~Peer()
+ConnmanPeer::~ConnmanPeer()
 {
     if (proxy_)
         g_clear_object (&proxy_);

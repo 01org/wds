@@ -25,36 +25,24 @@
 #include <memory>
 #include <gio/gio.h>
 
+#include "client.h"
 #include "information-element.h"
 #include "connman-peer.h"
 
 namespace P2P {
 
-class Client {
+class ConnmanClient : public Client {
     public:
-        class Observer {
-            public:
-                virtual void on_peer_added(Client *client, std::shared_ptr<P2P::Peer> peer) {}
-                virtual void on_peer_removed(Client *client, std::shared_ptr<P2P::Peer> peer) {}
-                virtual void on_availability_changed(Client *client) {}
+        ConnmanClient(const Parameters &params, Observer *observer = NULL);
+        virtual ~ConnmanClient();
 
-            protected:
-                virtual ~Observer() {}
-        };
+        void set_parameters(const Parameters &params) override;
 
-        Client(std::unique_ptr<P2P::InformationElementArray> &take_array, Observer *observer = NULL);
-        virtual ~Client();
-
-        void set_information_element(std::unique_ptr<P2P::InformationElementArray> &take_array);
-        void set_observer(Observer* observer) {
-            observer_ = observer;
-        }
-
-        bool is_available() const;
+        bool is_available() const override;
         /* TODO error / finished handling */
-        void scan();
+        void scan() override;
 
-    private:
+    protected:
         static void connman_appeared_cb(GDBusConnection *connection, const char *name, const char *owner, gpointer data_ptr);
         static void connman_disappeared_cb(GDBusConnection *connection, const char *name, gpointer data_ptr);
         static void proxy_signal_cb (GDBusProxy *proxy, const char *sender, const char *signal, GVariant *params, gpointer data_ptr);
@@ -75,13 +63,13 @@ class Client {
         void register_peer_service();
         void unregister_peer_service();
 
+        void set_ie_array_from_parameters(const Parameters &params);
+
         uint connman_watcher_;
         GDBusProxy *proxy_;
         GDBusProxy *technology_proxy_;
 
-        Observer* observer_;
         std::unique_ptr<P2P::InformationElementArray>array_;
-        std::map<std::string, std::shared_ptr<P2P::Peer>> peers_;
 };
 
 }

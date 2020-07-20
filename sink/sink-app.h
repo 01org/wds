@@ -25,7 +25,7 @@
 #include <memory>
 
 #include "sink.h"
-#include "connman-client.h"
+#include "multi-client.h"
 
 class SinkApp: public P2P::Client::Observer, public P2P::Peer::Observer {
  public:

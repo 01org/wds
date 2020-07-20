@@ -178,6 +178,7 @@ std::string MiracBroker::get_peer_address() const
 }
 
 MiracBroker::MiracBroker (const std::string& listen_port):
+    connect_wait_id_(0),
     connect_timer_(NULL)
 {
     network_source_ptr_ = this;
@@ -193,6 +194,7 @@ MiracBroker::MiracBroker (const std::string& listen_port):
 MiracBroker::MiracBroker(const std::string& peer_address, const std::string& peer_port, uint timeout):
     peer_address_(peer_address),
     peer_port_(peer_port),
+    connect_wait_id_(0),
     connect_timeout_(timeout)
 {
     network_source_ptr_ = this;
